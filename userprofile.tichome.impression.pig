@@ -22,15 +22,15 @@ REGISTER /home/jianwang/user_profile_offline/user_profile/offline/jars/piggybank
 REGISTER /home/jianwang/user_profile_offline/user_profile/offline/jars/fastjson-1.2.3.jar;
 REGISTER /home/jianwang/user_profile_offline/user_profile/offline/jars/httpclient-4.5.4.jar;
 
-REGISTER '/home/lingli/music/get_all.py' USING jython AS myfuncs;
+REGISTER '/home/lingli/music/music_artist_song.py' USING jython AS myfuncs;
 REGISTER '/home/lingli/music/util.py' using jython as utils;
 
 SET mapred.create.symlink yes
 
-%default MIN_TIMESTAMP 1200000000
-%default MAX_TIMESTAMP 2200000000
+%default MIN_TIMESTAMP 1200000000L
+%default MAX_TIMESTAMP 2200000000L
 
-analytics_log = LOAD '$INPUT_LOG'
+analytics_log = LOAD './impression.log'
                 USING com.twitter.elephantbird.pig.load.JsonLoader('-nestedLoad')
                 ;
 
@@ -82,7 +82,7 @@ filtered_event_user = FILTER raw_event_user BY
                          AND (event == 'music_recommend_impression')
                          AND (media_type == 'music')
                          AND response IS NOT NULL
-                       --  AND timestamp > $MIN_TIMESTAMP AND timestamp < $MAX_TIMESTAMP
+                         AND timestamp > $MIN_TIMESTAMP AND timestamp < $MAX_TIMESTAMP
                       ;
 
 -- Step 3: get (song,artist) pair and flatten
@@ -95,7 +95,7 @@ impression_event_user = FOREACH filtered_event_user
                            msg_id,
                            timestamp,
                            timezone,
-                           myfuncs.batchVerifyAndGetSongMeta(response)
+                           myfuncs.getSongFromQuery(response)
                         ;
 
 flattened_impression_detail = FOREACH impression_event_user {
